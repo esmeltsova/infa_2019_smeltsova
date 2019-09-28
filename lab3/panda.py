@@ -2,7 +2,7 @@ from graph import *
 import math
 
 width = 500
-height  = 333
+height = 333
 windowSize(width, height)
 brushColor(255, 175, 128)
 rectangle(0, 0, width, height)
@@ -21,7 +21,7 @@ def ellipse (x0, y0, a, b, angle):
         ellip.append((x1, y1))
     polygon(ellip)
 
-def bambuk (x0, y0, h, w): #h shirina, w vysota
+def bambuk (x0, y0, h, w): #h width, w height
     penColor(0, 104, 55) #x0 + h(x - 74) = x0 - 74 h + hx
     brushColor(0, 104, 55)
     penSize(5*w)
@@ -125,10 +125,11 @@ def panda (x0, y0, size):
     polygon(left_ear)
     polygon(right_ear)
 
+
 bambuk(74, 229, 1, 1)
 bambuk(173, 231, 1, 5/4)
 bambuk(248, 223, 3/2, 3/2)
 bambuk(440, 215, 1, 9/8)
 panda(360, 190, 1)
-panda (250, 260, 2/5)
+panda(250, 260, 2/5)
 run()
