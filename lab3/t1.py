@@ -44,7 +44,7 @@ def draw_Scene(time):
 def func():
     global time
     draw_BG()
-    draw_Scene(time, dt)
+    draw_Scene(time)
     time += dt
     
 onTimer(func, dt)
