@@ -35,7 +35,7 @@ def ellipse(x0, y0, a, b, angle):
         ellip.append((x1, y1))
     polygon(ellip)
     
-def draw_Scene(time, dt):
+def draw_Scene(time):
     x = 10 + time
     y = 10 + time * time / 1000
     ellipse(x, y, 30, 30, 0)
