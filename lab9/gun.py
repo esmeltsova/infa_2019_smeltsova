@@ -3,8 +3,6 @@ import tkinter as tk
 import math
 import time
 
-# print (dir(math))
-
 root = tk.Tk()
 fr = tk.Frame(root)
 root.geometry('800x600')
@@ -26,7 +24,7 @@ class ball():
         self.vy = 0
         self.ay = 0
         self.ax = 0
-        self.color = choice(['blue', 'green', 'red', 'brown'])
+        self.color = choice(['blue', 'green', 'yellow', 'brown'])
         self.id = canv.create_oval(
                 self.x - self.r,
                 self.y - self.r,
@@ -48,27 +46,31 @@ class ball():
     def move(self):
         """Переместить мяч по прошествии единицы времени.
         Метод описывает перемещение мяча за один кадр перерисовки. То есть, обновляет значения
-        self.x и self.y с учетом скоростей self.vx и self.vy, силы гравитации, действующей на мяч,
+        self.x и self.y с учетом скоростей self.vx и self.vy, сил трения и гравитации, действующих на мяч,
         и стен по краям окна (размер окна 800х600).
         """
         self.ax = -0.04*self.vx
-        self.ay = -0.04*self.vy
-        self.ay += 1
-        if self.x >= 800 - self.r:
+        self.ay = -0.04*self.vy + 1
+        if self.x >= 800 - self.r or self.x <= self.r:
             self.vx *= -1
-        if self.y >= 570 - self.r:
+        if self.y >= 600 - self.r:
+            self.ay -= 1
             self.vy *= -0.8
-            if 0.3 >= self.vy >= -0.3:
+            if -0.2 <= self.vy <= 0.2:
                 self.ay = 0
-            else:
-                self.ay += 1
-        else:
-            self.ay += 1
+                self.vy = 0
+        if self.y <= self.r:
+            self.vy *= -1
+
         self.vx += self.ax
         self.vy += self.ay
         self.x += self.vx
         self.y += self.vy
         canv.move(self.id, self.vx, self.vy)
+        if -0.5 <= self.vx <= 0.5 and self.vy == 0:
+            canv.coords(self.id, -10, -10, -10, -10)
+
+
 
     def hittest(self, obj):
         """Функция проверяет сталкивалкивается ли данный обьект с целью, описываемой в обьекте obj.
@@ -88,7 +90,7 @@ class gun():
         self.f2_power = 10
         self.f2_on = 0
         self.an = 1
-        self.id = canv.create_line(20, 450, 50, 420, width=7) # FIXME: don't know how to set it...
+        self.id = canv.create_line(20, 450, 50, 420, width=7)
 
     def fire2_start(self, event):
         self.f2_on = 1
@@ -125,34 +127,30 @@ class gun():
     def power_up(self):
         if self.f2_on:
             if self.f2_power < 100:
-                self.f2_power += 5
+                self.f2_power += 3
             canv.itemconfig(self.id, fill='orange')
         else:
             canv.itemconfig(self.id, fill='black')
 
+    def remove(self):
+        canv.itemconfig(self.id, fill='white')
+
 class target():
     def __init__(self):
-        self.points = 0
-        self.live = 1
-        self.x = 0
-        self.y = 0
-        self.vy = rnd(-5, 5)
-        self.color = 'red'
-        # FIXME: don't work!!! How to call this functions when object is created?
-        self.id = canv.create_oval(0, 0, 0, 0)
-        self.id_points = canv.create_text(30, 30, text=self.points, font='28')
-
-    def new_target(self):
         """ Инициализация новой цели. """
         self.x = rnd(600, 780)
         self.y = rnd(300, 550)
         self.r = rnd(10, 50)
         self.color = 'red'
-        canv.coords(self.id, self.x-self.r, self.y-self.r, self.x+self.r, self.y+self.r)
+        self.id = canv.create_oval(0, 0, 0, 0)
+        canv.coords(self.id, self.x - self.r, self.y - self.r, self.x + self.r, self.y + self.r)
         canv.itemconfig(self.id, fill=self.color)
+        self.vy = rnd(-5, -1)
+        self.points = 10
+        self.live = 1
 
     def move_target(self):
-        if self.y >= 570 - self.r:
+        if self.y >= 600 - self.r:
             self.vy = rnd(-5, -1)
         if self.y <= self.r:
             self.vy = rnd(1, 5)
@@ -161,33 +159,23 @@ class target():
 
     def hit(self):
         """Попадание шарика в цель."""
+        self.points = int(10*self.vy/self.r)^2
         canv.coords(self.id, -10, -10, -10, -10)
 
-    def score(self, points=1):
-        self.points += points
-        canv.itemconfig(self.id_points, text=self.points)
 
-t1 = target()
-t2 = target()
-screen1 = canv.create_text(400, 300, text='', font='28')
-g1 = gun()
-bullet = 0
-balls = []
 
 
 def new_game(event=''):
-    global t1, t2, screen1, balls, bullet
-    t1.new_target()
+    global g1, screen1, balls, bullet, score
+    t1 = target()
+    t2 = target()
     bullet = 0
-    t2.new_target()
     balls = []
+    canv.itemconfig(g1, fill='black')
     canv.bind('<Button-1>', g1.fire2_start)
     canv.bind('<ButtonRelease-1>', g1.fire2_end)
     canv.bind('<Motion>', g1.targetting)
 
-    z = 0.03
-    t1.live = 1
-    t2.live = 1
     while balls or t1.live or t2.live:
         t1.move_target()
         t2.move_target()
@@ -196,32 +184,80 @@ def new_game(event=''):
             if b.hittest(t1) and t1.live:
                 t1.live = 0
                 t1.hit()
-                canv.itemconfig(screen1, text='Вы уничтожили цель1 за ' + str(bullet) + ' выстрелов')
+                if bullet / 10 % 10 != 0 and bullet % 10 == 1:
+                    canv.itemconfig(screen1, text='Вы уничтожили цель за ' + str(bullet) + ' выстрел')
+                elif bullet / 10 % 10 != 0 and 2 <= bullet % 10 <= 4:
+                    canv.itemconfig(screen1, text='Вы уничтожили цель за ' + str(bullet) + ' выстрела')
+                else:
+                    canv.itemconfig(screen1, text='Вы уничтожили цель за ' + str(bullet) + ' выстрелов')
+                score += max(t1.points - bullet, 1)
+                canv.itemconfig(screen2, text=score)
                 root.after(1000, del_text)
             if b.hittest(t2) and t2.live:
                 t2.live = 0
                 t2.hit()
-                canv.itemconfig(screen1, text='Вы уничтожили цель2 за ' + str(bullet) + ' выстрелов')
+                if bullet / 10 % 10 != 1 and bullet % 10 == 1:
+                    canv.itemconfig(screen1, text='Вы уничтожили цель за ' + str(bullet) + ' выстрел')
+                elif bullet / 10 % 10 != 1 and 2 <= bullet % 10 <= 4:
+                    canv.itemconfig(screen1, text='Вы уничтожили цель за ' + str(bullet) + ' выстрела')
+                else:
+                    canv.itemconfig(screen1, text='Вы уничтожили цель за ' + str(bullet) + ' выстрелов')
+                score += max(t1.points - bullet, 1)
+                canv.itemconfig(screen2, text=score)
                 root.after(1000, del_text)
             if t2.live == 0 and t1.live == 0:
-                t1.score()
-                t2.score()
                 canv.bind('<Button-1>', '')
                 canv.bind('<ButtonRelease-1>', '')
+                canv.bind('<Motion>', '')
                 for bb in balls:
                     canv.delete(bb.id)
-                    balls = []
+                balls = []
         canv.update()
         time.sleep(0.03)
         g1.targetting()
         g1.power_up()
     time.sleep(1.5)
     del_text()
-    new_game()
-
+    g1.remove()
+    canv.itemconfig(end_screen, text="Ваш результат: " + str(score), font='28')
+    b1.config(text="Играть дальше", font='28')
+    b1.config(command=play_button)
+    b1.place(x=300, y=320)
+    b2.config(text="Новая игра")
+    b2.config(command=new_game_button, font='28')
+    b2.place(x=300, y=360)
 def del_text():
     canv.itemconfig(screen1, text='')
 
+
+def play_button():
+    global b1, b2
+    b1.config(command=b1.place_forget())
+    b2.config(command=b2.place_forget())
+    canv.itemconfig(end_screen, text='')
+    new_game()
+
+
+def new_game_button():
+    global score
+    score = 0
+    global b1, b2
+    b1.config(command=b1.place_forget())
+    b2.config(command=b2.place_forget())
+    canv.itemconfig(screen2, text=score)
+    canv.itemconfig(end_screen, text='')
+    new_game()
+
+screen1 = canv.create_text(400, 300, text='', font='28')
+g1 = gun()
+bullet = 0
+balls = []
+score = 0
+screen2 = canv.create_text(30, 30, text=score, font='28')
+end_screen = canv.create_text(350, 290, text='')
+b1 = tk.Button(text='')
+b2 = tk.Button(text='')
 new_game()
 
-mainloop()
+tk.mainloop()
+
